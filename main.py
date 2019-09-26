@@ -79,7 +79,7 @@ def get_games():
                 if last_div:
                     game_cost = last_div.getText().replace('(', '').replace(')', '').replace('P', '')
 
-                game_name = item.find('a', {'class': 'giveaway__heading__name'}).text
+                game_name = item.find('a', {'class': 'giveaway__heading__name'}).text.encode('utf-8')
 
                 if int(points) - int(game_cost) < 0:
                     print('Not enough points to enter: ' + game_name)
