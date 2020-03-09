@@ -1,34 +1,49 @@
 import sys
+import configparser
 import requests
-from bs4 import BeautifulSoup
 import json
-import time
 import threading
+
+from time import sleep
+from random import randint
 from requests import RequestException
+from bs4 import BeautifulSoup
 
-try:
-    file = open('cookie.txt', 'r')
-    cook = file.readline()
-    if len(cook) == 0:
-        print('There is no cookie in cookie.txt file')
-        time.sleep(30)
-        sys.exit(0)
-except FileNotFoundError:
-    print('Cant find cookie.txt file')
-    time.sleep(30)
-    sys.exit(0)
+CONFIG_DEFAULT = {
+    'cookie': 'Paste you cookie here',
+    'sleeptime': 900
+}
 
-timeout = 900
+def exitMessage(msg):
+    print(msg)
+    input()
+    sys.exit()
+
+def readConfig():
+    config = configparser.ConfigParser()
+
+    def initConfig():
+        config['STEAMGIFTS'] = CONFIG_DEFAULT
+        with open('config.ini', 'w') as configfile:
+            config.write(configfile)
+
+    if not len(config.read('config.ini')):
+        initConfig()
+        exitMessage('Init file was created. Please, look into it and set up your cookie.')
+    elif list(CONFIG_DEFAULT.keys()) != list(config['STEAMGIFTS'].keys()):
+        initConfig()
+        exitMessage('Init file was reinitialised due to incorrect format. Please, look into it and set up your cookie.')
+
+    global timeout, cookies
+    timeout = config['STEAMGIFTS']['sleeptime']
+    cookies = {'PHPSESSID': config['STEAMGIFTS']['cookie']}
+
+
 pages = 1
 
-
 def get_soup_from_page(url):
-    global cookies 
-
-    cookies = {'PHPSESSID': cook}
     r = requests.get(url, cookies=cookies)
     soup = BeautifulSoup(r.text, 'html.parser')
-
     return soup
 
 def get_page():
@@ -42,11 +57,11 @@ def get_page():
     except RequestException:
         print('Cant connect to the site')
         print('Waiting 2 minutes and reconnect...')
-        time.sleep(120)
+        sleep(120)
         get_page()
     except TypeError:
         print('Cant recognize your cookie value.')
-        time.sleep(30)
+        sleep(30)
         sys.exit(0)
 
 
@@ -67,7 +82,7 @@ def get_games():
             for item in gifts_list:
                 if int(points) == 0:
                     print('> Sleeping to get 6 points')
-                    time.sleep(timeout)
+                    sleep(timeout)
                     get_games()
                     break
 
@@ -88,11 +103,11 @@ def get_games():
                     entry_gift(item.find('a', {'class': 'giveaway__heading__name'})['href'].split('/')[2])
                 
             n = n+1
-        except AttributeError as e:
+        except AttributeError:
             break
 
     print('List of games is ended. Waiting 2 min to update...')
-    time.sleep(120)
+    sleep(120)
     get_page()
     get_games()
 
@@ -107,39 +122,11 @@ def entry_gift(code):
 
     # updating points after entered a giveaway
     if json_data['type'] == 'success':
-        print('> Bot has entered giveaway: ' + game_name)
-        time.sleep(5)
-
-
-def inputs_data():
-    global timeout
-    global pages
-
-    while 1:
-        cmd = input().split()
-        if cmd == '!help':
-            print(' [ HELP BOX ]')
-            print('!sleep [arg]\t- change a sleeping interval in sec (default is 900 sec)')
-            print('!page [arg]\t- set a final page')
-        if len(cmd) == 1:
-            print('!help to see available commands')
-        if cmd[0] == '!sleep':
-            try:
-                timeout = int(cmd[1])
-                print('Successfuly set interval to ' + (timeout))
-            except ValueError:
-                print('Expect a digit!')
-
-        elif cmd[0] == '!page':
-            try:
-                pages = int(cmd[1])
-                print('Successfuly set final page to ' + str(pages))
-            except ValueError:
-                print('Expect a digit!')
-
+        print('> Bot has entered giveaway: ' + game_name.decode("utf-8"))
+        sleep(randint(10, 30))
 
 if __name__ == '__main__':
-    thread = threading.Thread(target=inputs_data)
-    thread.start()
+    readConfig()
+
     get_page()
     get_games()
