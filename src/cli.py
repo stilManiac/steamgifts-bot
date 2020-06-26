@@ -6,8 +6,6 @@ from pyconfigstore import ConfigStore
 from PyInquirer import (Token, ValidationError, Validator, print_json, prompt,
                         style_from_dict)
 
-# from main import SteamGifts
-
 try:
     import colorama
     colorama.init()
@@ -56,7 +54,8 @@ def ask(type, name, message, validator=None, choices=[]):
     return answers
 
 
-def main():
+def run():
+    from main import SteamGifts as SG
 
     def askCookie():
         cookie = ask(type='input',
@@ -75,12 +74,14 @@ def main():
     config.read('config.ini')
     if not config['DEFAULT'].get('cookie'):
         cookie = askCookie()
-
-    re_enter_cookie = ask(type='confirm',
-                          name='reenter',
-                          message='Do you want to enter new cookie?')['reenter']
-    if re_enter_cookie:
-        cookie = askCookie()
+    else:
+        re_enter_cookie = ask(type='confirm',
+                            name='reenter',
+                            message='Do you want to enter new cookie?')['reenter']
+        if re_enter_cookie:
+            cookie = askCookie()
+        else:
+            cookie = config['DEFAULT'].get('cookie')
 
     gift_type = ask(type='list',
                  name='gift_type',
@@ -94,8 +95,9 @@ def main():
                      'New'
                  ])['gift_type']
 
-    # s = SteamGifts(cookie, gift_type)
-    # s.start()
+    s = SG(cookie, gift_type)
+    s.start()
+
 
 if __name__ == '__main__':
-    main()
+    run()
