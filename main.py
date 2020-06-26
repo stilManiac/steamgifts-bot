@@ -101,7 +101,7 @@ def get_games():
                     continue
                 elif int(points) - int(game_cost) > 0:
                     entry_gift(item.find('a', {'class': 'giveaway__heading__name'})['href'].split('/')[2])
-                
+
             n = n+1
         except AttributeError:
             break
