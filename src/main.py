@@ -15,11 +15,13 @@ from cli import log
 
 
 class SteamGifts:
-    def __init__(self, cookie, gifts_type):
+    def __init__(self, cookie, gifts_type, pinned, min_points):
         self.cookie = {
             'PHPSESSID': cookie
         }
         self.gifts_type = gifts_type
+        self.pinned = pinned
+        self.min_points = int(min_points)
 
         self.base = "https://www.steamgifts.com"
         self.session = requests.Session()
@@ -60,8 +62,13 @@ class SteamGifts:
     def update_info(self):
         soup = self.get_soup_from_page(self.base)
 
-        self.xsrf_token = soup.find('input', {'name': 'xsrf_token'})['value']
-        self.points = int(soup.find('span', {'class': 'nav__points'}).text)  # storage points
+        try:
+            self.xsrf_token = soup.find('input', {'name': 'xsrf_token'})['value']
+            self.points = int(soup.find('span', {'class': 'nav__points'}).text)  # storage points
+        except TypeError:
+            log("⛔  Cookie is not valid.", "red")
+            sleep(10)
+            exit()
 
     def get_game_content(self, page=1):
         n = page
@@ -74,13 +81,22 @@ class SteamGifts:
 
             soup = self.get_soup_from_page(paginated_url)
 
-            game_list = soup.find_all(lambda tag: tag.name == 'div' and tag.get('class') == ['giveaway__row-inner-wrap'])
+            game_list = soup.find_all('div', {'class': 'giveaway__row-inner-wrap'})
+
+            if not len(game_list):
+                log("⛔  Page is empty. Please, select another type.", "red")
+                sleep(10)
+                exit()
 
             for item in game_list:
-                if self.points == 0:
-                    log("🛋️  Sleeping to get 6 points", "yellow")
+                if len(item.get('class', [])) == 2 and not self.pinned:
+                    continue
+
+                if self.points == 0 or self.points < self.min_points:
+                    txt = f"🛋️  Sleeping to get 6 points. We have {self.points} points, but we need {self.min_points} to start."
+                    log(txt, "yellow")
                     sleep(900)
-                    self.get_game_content(page=n)
+                    self.start()
                     break
 
                 game_cost = item.find_all('span', {'class': 'giveaway__heading__thin'})[-1]
@@ -101,14 +117,15 @@ class SteamGifts:
                     game_id = item.find('a', {'class': 'giveaway__heading__name'})['href'].split('/')[2]
                     res = self.entry_gift(game_id)
                     if res:
-                        txt = f"🎉 One more game! Have just entered {game_name}"
+                        self.points -= int(game_cost)
+                        txt = f"🎉 One more game! Has just entered {game_name}"
                         log(txt, "green")
-                        # sleep(randint(10, 30))
+                        sleep(randint(3, 7))
 
             n = n+1
 
 
-        log("🛋️  List of games is ended. Waiting 2 min to update...", "yellow")
+        log("🛋️  List of games is ended. Waiting 2 mins to update...", "yellow")
         sleep(120)
         self.start()
 
@@ -116,8 +133,6 @@ class SteamGifts:
         payload = {'xsrf_token': self.xsrf_token, 'do': 'entry_insert', 'code': game_id}
         entry = requests.post('https://www.steamgifts.com/ajax.php', data=payload, cookies=self.cookie)
         json_data = json.loads(entry.text)
-
-        self.update_info()
 
         if json_data['type'] == 'success':
             return True

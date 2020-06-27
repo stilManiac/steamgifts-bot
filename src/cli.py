@@ -1,10 +1,12 @@
 import six
 import configparser
+import re
 
 from pyfiglet import figlet_format
 from pyconfigstore import ConfigStore
 from PyInquirer import (Token, ValidationError, Validator, print_json, prompt,
                         style_from_dict)
+from prompt_toolkit import document
 
 try:
     import colorama
@@ -37,13 +39,26 @@ def log(string, color, font="slant", figlet=False):
         six.print_(string)
 
 
-def ask(type, name, message, validator=None, choices=[]):
+class PointValidator(Validator):
+    def validate(self, document: document.Document):
+        value = document.text
+        try:
+            value = int(value)
+        except Exception:
+            raise ValidationError(message = 'Value should be greater than 0', cursor_position = len(document.text))
+
+        if value <= 0:
+            raise ValidationError(message = 'Value should be greater than 0', cursor_position = len(document.text))
+        return True
+
+
+def ask(type, name, message, validate=None, choices=[]):
     questions = [
         {
             'type': type,
             'name': name,
             'message': message,
-            'validator': validator,
+            'validate': validate,
         },
     ]
     if choices:
@@ -83,6 +98,10 @@ def run():
         else:
             cookie = config['DEFAULT'].get('cookie')
 
+    pinned_games = ask(type='confirm',
+                       name='pinned',
+                       message='Should bot enter pinned games?')['pinned']
+
     gift_type = ask(type='list',
                  name='gift_type',
                  message='Select type:',
@@ -95,7 +114,12 @@ def run():
                      'New'
                  ])['gift_type']
 
-    s = SG(cookie, gift_type)
+    min_points = ask(type='input',
+                     name='min_points',
+                     message='Enter minimum points to start working (bot will try to enter giveaways until minimum value is reached):',
+                     validate=PointValidator)['min_points']
+
+    s = SG(cookie, gift_type, pinned_games, min_points)
     s.start()
 
 

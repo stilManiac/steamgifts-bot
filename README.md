@@ -1,4 +1,4 @@
-![](https://i.imgur.com/dKA3udT.png)
+![](https://i.imgur.com/oCob3wQ.gif)
 
 ### About
 The bot is specially designed for [SteamGifts.com](https://www.steamgifts.com/)
@@ -22,7 +22,7 @@ The bot is specially designed for [SteamGifts.com](https://www.steamgifts.com/)
 python -m venv env
 source env/bin/activate
 pip install -r requirements.txt
-python cli.py
+python src/cli.py
 ```
 
 ### Help
