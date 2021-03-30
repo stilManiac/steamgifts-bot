@@ -9,7 +9,7 @@ mccabe==0.6.1
 prompt-toolkit==1.0.14
 pyconfigstore3==1.0.1
 pyfiglet==0.8.post1
-Pygments==2.6.1
+Pygments==2.7.4
 PyInquirer==1.0.3
 pylint==2.5.3
 regex==2020.6.8
