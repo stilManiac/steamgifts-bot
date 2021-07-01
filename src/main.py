@@ -72,6 +72,7 @@ class SteamGifts:
 
     def get_game_content(self, page=1):
         n = page
+
         while True:
             txt = "⚙️  Retrieving games from %d page." % n
             log(txt, "magenta")
@@ -80,16 +81,24 @@ class SteamGifts:
             paginated_url = f"{self.base}/giveaways/{filtered_url}"
 
             soup = self.get_soup_from_page(paginated_url)
+            pinned = soup.find('div', {'class': 'pinned-giveaways__outer-wrap'})
 
-            game_list = soup.find_all('div', {'class': 'giveaway__row-inner-wrap'})
+            game_list = []
+            if self.pinned:
+                game_list = pinned.find_all('div', {'class': 'giveaway__row-inner-wrap'})
 
-            if not len(game_list):
-                log("⛔  Page is empty. Please, select another type.", "red")
-                sleep(10)
-                exit()
+            common_sections = pinned.find_next_siblings()
+            common_list = []
+            for item in common_sections:
+                common_list += item.find_all('div', {'class': 'giveaway__row-inner-wrap'})
+
+            if not len(common_list):
+                break
+
+            game_list += common_list
 
             for item in game_list:
-                if len(item.get('class', [])) == 2 and not self.pinned:
+                if 'is-faded' in item['class']:
                     continue
 
                 if self.points == 0 or self.points < self.min_points:
