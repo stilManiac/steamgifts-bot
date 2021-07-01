@@ -1,6 +1,7 @@
 import six
 import configparser
 import re
+import asyncio
 
 from pyfiglet import figlet_format
 from pyconfigstore import ConfigStore
@@ -69,7 +70,7 @@ def ask(type, name, message, validate=None, choices=[]):
     return answers
 
 
-def run():
+async def run():
     from main import SteamGifts as SG
 
     def askCookie():
@@ -102,16 +103,16 @@ def run():
                        name='pinned',
                        message='Should bot enter pinned games?')['pinned']
 
-    gift_type = ask(type='list',
+    gift_type = ask(type='checkbox',
                  name='gift_type',
                  message='Select type:',
                  choices=[
-                     'All',
-                     'Wishlist',
-                     'Recommended',
-                     'Copies',
-                     'DLC',
-                     'New'
+                     {'name': 'All'},
+                     {'name': 'Wishlist'},
+                     {'name': 'Recommended'},
+                     {'name': 'Copies'},
+                     {'name': 'DLC'},
+                     {'name': 'New'}
                  ])['gift_type']
 
     min_points = ask(type='input',
@@ -119,9 +120,9 @@ def run():
                      message='Enter minimum points to start working (bot will try to enter giveaways until minimum value is reached):',
                      validate=PointValidator)['min_points']
 
-    s = SG(cookie, gift_type, pinned_games, min_points)
-    s.start()
+    s = (SG(cookie, gift, pinned_games, min_points) for gift in gift_type)
+    await asyncio.gather(*(i.start() for i in s))
 
 
 if __name__ == '__main__':
-    run()
+    asyncio.run(run())

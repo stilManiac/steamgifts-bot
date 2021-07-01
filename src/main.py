@@ -2,7 +2,7 @@ import sys
 import configparser
 import requests
 import json
-import threading
+import asyncio
 
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
@@ -70,11 +70,11 @@ class SteamGifts:
             sleep(10)
             exit()
 
-    def get_game_content(self, page=1):
+    async def get_game_content(self, page=1):
         n = page
 
         while True:
-            txt = "⚙️  Retrieving games from %d page." % n
+            txt = "⚙️  Retrieving %s games from page %d." % (self.gifts_type, n)
             log(txt, "magenta")
 
             filtered_url = self.filter_url[self.gifts_type] % n
@@ -104,8 +104,8 @@ class SteamGifts:
                 if self.points == 0 or self.points < self.min_points:
                     txt = f"🛋️  Sleeping to get 6 points. We have {self.points} points, but we need {self.min_points} to start."
                     log(txt, "yellow")
-                    sleep(900)
-                    self.start()
+                    await asyncio.sleep(900)
+                    await self.start()
                     break
 
                 game_cost = item.find_all('span', {'class': 'giveaway__heading__thin'})[-1]
@@ -118,7 +118,7 @@ class SteamGifts:
                 game_name = item.find('a', {'class': 'giveaway__heading__name'}).text
 
                 if self.points - int(game_cost) < 0:
-                    txt = f"⛔ Not enough points to enter: {game_name}"
+                    txt = f"⛔ Not enough points to enter {self.gifts_type}: {game_name}"
                     log(txt, "red")
                     continue
 
@@ -127,16 +127,16 @@ class SteamGifts:
                     res = self.entry_gift(game_id)
                     if res:
                         self.points -= int(game_cost)
-                        txt = f"🎉 One more game! Has just entered {game_name}"
+                        txt = f"🎉 One more {self.gifts_type} game! Has just entered {game_name}"
                         log(txt, "green")
                         sleep(randint(3, 7))
 
             n = n+1
 
 
-        log("🛋️  List of games is ended. Waiting 2 mins to update...", "yellow")
-        sleep(120)
-        self.start()
+        log(f"🛋️  List of {self.gifts_type} games is ended. Waiting 2 mins to update...", "yellow")
+        await asyncio.sleep(120)
+        await self.start()
 
     def entry_gift(self, game_id):
         payload = {'xsrf_token': self.xsrf_token, 'do': 'entry_insert', 'code': game_id}
@@ -146,11 +146,11 @@ class SteamGifts:
         if json_data['type'] == 'success':
             return True
 
-    def start(self):
+    async def start(self):
         self.update_info()
 
         if self.points > 0:
-            txt = "🤖 Hoho! I am back! You have %d points. Lets hack." % self.points
+            txt = "🤖 Hoho! I am back! You have %d points. Lets hack some %s games." % (self.points, self.gifts_type)
             log(txt, "blue")
 
-        self.get_game_content()
+        await self.get_game_content()
