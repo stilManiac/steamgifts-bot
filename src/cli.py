@@ -98,6 +98,10 @@ async def run():
             cookie = askCookie()
         else:
             cookie = config['DEFAULT'].get('cookie')
+    
+    pinned_games = ask(type='confirm',
+                       name='pinned',
+                       message='Should bot enter pinned games?')['pinned']
 
     gift_type = ask(type='checkbox',
                  name='gift_type',
@@ -117,7 +121,7 @@ async def run():
                      message='Enter minimum points to start working (bot will try to enter giveaways until minimum value is reached):',
                      validate=PointValidator)['min_points']
 
-    s = (SG(cookie, gift, min_points) for gift in gift_type)
+    s = (SG(cookie, gift, pinned_games, min_points) for gift in gift_type)
     await asyncio.gather(*(i.start() for i in s))
 
 
