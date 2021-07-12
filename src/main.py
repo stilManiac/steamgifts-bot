@@ -104,8 +104,8 @@ class SteamGifts:
             n = n+1
 
 
-        log(f"🛋️  List of {self.gifts_type} games is ended. Waiting 5 mins to update...", "yellow")
-        await asyncio.sleep(300)
+        log(f"🛋️  List of {self.gifts_type} games is ended. Waiting 15 mins to update...", "yellow")
+        await asyncio.sleep(900)
         await self.start()
 
     async def entry_gift(self, game_id):
