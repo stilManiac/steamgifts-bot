@@ -21,7 +21,7 @@ class SteamGifts:
         self.min_points = int(min_points)
 
         self.base = "https://www.steamgifts.com"
-        self.session = requests.Session()
+        self.session = None
 
         self.filter_url = {
             'All': "search?page=%d",
@@ -33,11 +33,10 @@ class SteamGifts:
             'New': "search?page=%d&type=new"
         }
 
-    @retry(stop=stop_after_attempt(5), wait=wait_fixed(1))
+    #@retry(stop=stop_after_attempt(5), wait=wait_fixed(1))
     async def get_soup_from_page(self, url):
-        async with aiohttp.ClientSession(cookies=self.cookie) as session:
-            async with session.get(url) as r:
-                soup = BeautifulSoup(await r.text(), 'html.parser')
+        async with self.session.get(url) as r:
+            soup = BeautifulSoup(await r.text(), 'html.parser')
         return soup
 
     async def update_info(self):
@@ -48,7 +47,7 @@ class SteamGifts:
             self.points = int(soup.find('span', {'class': 'nav__points'}).text)  # storage points
         except TypeError:
             log("⛔  Cookie is not valid.", "red")
-            sleep(10)
+            asyncio.sleep(10)
             exit()
 
     async def get_game_content(self, page=1):
@@ -95,12 +94,12 @@ class SteamGifts:
 
                 elif self.points - int(game_cost) >= 0:
                     game_id = item.find('a', {'class': 'giveaway__heading__name'})['href'].split('/')[2]
-                    res = self.entry_gift(game_id)
+                    res = await self.entry_gift(game_id)
                     if res:
                         self.points -= int(game_cost)
                         txt = f"🎉 One more {self.gifts_type} game! Has just entered {game_name}"
                         log(txt, "green")
-                        sleep(randint(3, 7))
+                        await asyncio.sleep(randint(3, 7))
 
             n = n+1
 
@@ -109,15 +108,18 @@ class SteamGifts:
         await asyncio.sleep(300)
         await self.start()
 
-    def entry_gift(self, game_id):
+    async def entry_gift(self, game_id):
         payload = {'xsrf_token': self.xsrf_token, 'do': 'entry_insert', 'code': game_id}
-        entry = requests.post('https://www.steamgifts.com/ajax.php', data=payload, cookies=self.cookie)
-        json_data = json.loads(entry.text)
+        entry = await self.session.post('https://www.steamgifts.com/ajax.php', data=payload)
+        json_data = json.loads(await entry.text())
 
         if json_data['type'] == 'success':
             return True
 
     async def start(self):
+        if not self.session:
+            self.session = aiohttp.ClientSession(cookies=self.cookie)
+
         await self.update_info()
 
         if self.points > 0:
