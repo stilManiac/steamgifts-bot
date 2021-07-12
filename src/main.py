@@ -15,12 +15,11 @@ from cli import log
 
 
 class SteamGifts:
-    def __init__(self, cookie, gifts_type, pinned, min_points):
+    def __init__(self, cookie, gifts_type, min_points):
         self.cookie = {
             'PHPSESSID': cookie
         }
         self.gifts_type = gifts_type
-        self.pinned = pinned
         self.min_points = int(min_points)
 
         self.base = "https://www.steamgifts.com"
@@ -32,6 +31,7 @@ class SteamGifts:
             'Recommended': "search?page=%d&type=recommended",
             'Copies': "search?page=%d&copy_min=2",
             'DLC': "search?page=%d&dlc=true",
+            'Group': "search?page=%d&type=group",
             'New': "search?page=%d&type=new"
         }
 
@@ -81,21 +81,11 @@ class SteamGifts:
             paginated_url = f"{self.base}/giveaways/{filtered_url}"
 
             soup = self.get_soup_from_page(paginated_url)
-            pinned = soup.find('div', {'class': 'pinned-giveaways__outer-wrap'})
 
-            game_list = []
-            if self.pinned:
-                game_list = pinned.find_all('div', {'class': 'giveaway__row-inner-wrap'})
+            game_list = soup.find_all('div', {'class': 'giveaway__row-inner-wrap'})
 
-            common_sections = pinned.find_next_siblings()
-            common_list = []
-            for item in common_sections:
-                common_list += item.find_all('div', {'class': 'giveaway__row-inner-wrap'})
-
-            if not len(common_list):
+            if not len(game_list):
                 break
-
-            game_list += common_list
 
             for item in game_list:
                 if 'is-faded' in item['class']:
