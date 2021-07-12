@@ -4,11 +4,9 @@ import requests
 import json
 import asyncio
 
-from requests.adapters import HTTPAdapter
-from urllib3.util import Retry
-from time import sleep
 from random import randint
-from requests import RequestException
+import aiohttp
+from tenacity import retry, stop_after_attempt, wait_fixed
 from bs4 import BeautifulSoup
 
 from cli import log
@@ -35,32 +33,15 @@ class SteamGifts:
             'New': "search?page=%d&type=new"
         }
 
-    def requests_retry_session(
-        self,
-        retries=5,
-        backoff_factor=0.3
-    ):
-        session = self.session or requests.Session()
-        retry = Retry(
-            total=retries,
-            read=retries,
-            connect=retries,
-            backoff_factor=backoff_factor,
-            status_forcelist=(500, 502, 504),
-        )
-        adapter = HTTPAdapter(max_retries=retry)
-        session.mount('http://', adapter)
-        session.mount('https://', adapter)
-        return session
-
-    def get_soup_from_page(self, url):
-        r = self.requests_retry_session().get(url)
-        r = requests.get(url, cookies=self.cookie)
-        soup = BeautifulSoup(r.text, 'html.parser')
+    @retry(stop=stop_after_attempt(5), wait=wait_fixed(1))
+    async def get_soup_from_page(self, url):
+        async with aiohttp.ClientSession(cookies=self.cookie) as session:
+            async with session.get(url) as r:
+                soup = BeautifulSoup(await r.text(), 'html.parser')
         return soup
 
-    def update_info(self):
-        soup = self.get_soup_from_page(self.base)
+    async def update_info(self):
+        soup = await self.get_soup_from_page(self.base)
 
         try:
             self.xsrf_token = soup.find('input', {'name': 'xsrf_token'})['value']
@@ -80,7 +61,7 @@ class SteamGifts:
             filtered_url = self.filter_url[self.gifts_type] % n
             paginated_url = f"{self.base}/giveaways/{filtered_url}"
 
-            soup = self.get_soup_from_page(paginated_url)
+            soup = await self.get_soup_from_page(paginated_url)
 
             game_list = soup.find_all('div', {'class': 'giveaway__row-inner-wrap'})
 
@@ -124,8 +105,8 @@ class SteamGifts:
             n = n+1
 
 
-        log(f"🛋️  List of {self.gifts_type} games is ended. Waiting 2 mins to update...", "yellow")
-        await asyncio.sleep(120)
+        log(f"🛋️  List of {self.gifts_type} games is ended. Waiting 5 mins to update...", "yellow")
+        await asyncio.sleep(300)
         await self.start()
 
     def entry_gift(self, game_id):
@@ -137,7 +118,7 @@ class SteamGifts:
             return True
 
     async def start(self):
-        self.update_info()
+        await self.update_info()
 
         if self.points > 0:
             txt = "🤖 Hoho! I am back! You have %d points. Lets hack some %s games." % (self.points, self.gifts_type)
