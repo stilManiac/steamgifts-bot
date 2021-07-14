@@ -34,7 +34,7 @@ class SteamGifts:
             'New': "search?page=%d&type=new"
         }
 
-    #@retry(stop=stop_after_attempt(5), wait=wait_fixed(1))
+    @retry(stop=stop_after_attempt(5), wait=wait_fixed(1))
     async def get_soup_from_page(self, url):
         async with self.session.get(url) as r:
             soup = BeautifulSoup(await r.text(), 'html.parser')
@@ -78,7 +78,7 @@ class SteamGifts:
                 break
 
             game_list += common_list
-            
+
             for item in game_list:
                 if 'is-faded' in item['class']:
                     continue
@@ -120,6 +120,7 @@ class SteamGifts:
         await asyncio.sleep(900)
         await self.start()
 
+    @retry(stop=stop_after_attempt(5), wait=wait_fixed(1))
     async def entry_gift(self, game_id):
         payload = {'xsrf_token': self.xsrf_token, 'do': 'entry_insert', 'code': game_id}
         entry = await self.session.post('https://www.steamgifts.com/ajax.php', data=payload)
