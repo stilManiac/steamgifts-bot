@@ -1,3 +1,4 @@
 env/
 *.ini
 __pycache__/
+.vscode/
