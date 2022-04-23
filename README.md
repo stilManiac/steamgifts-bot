@@ -27,16 +27,6 @@ python src/cli.py
 
 ### Docker
 
-#### Run it using a hub.docker.com image
-```bash
-# Run the container
-docker run --name steamgifts -d -it mcinj/docker-steamgifts-bot:latest
-# Attach to it to fill in the questions
-docker attach steamgifts # to detach, you must use ctrl+p then ctrl+q. 
-                         # ctrl+c will kill the container
-```
-
-#### Or build it yourself locally
 ```bash
 # Build the image
 docker build -t steamgifts:latest .
