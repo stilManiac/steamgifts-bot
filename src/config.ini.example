@@ -1,0 +1,11 @@
+[DEFAULT]
+cookie = PHPSESSIONCOOKIEGOESHERE
+# gift_types options: All, Wishlist, Recommended, Copies, DLC, New
+gift_types = All
+pinned = true
+# minimum number of points in your account before entering into giveaways
+minimum_points = 50
+# max number of entries in a giveaway for it to be considered
+max_entries = 900
+# time left in minutes of a giveaway for it to be considered
+max_time_left = 180
