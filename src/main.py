@@ -84,29 +84,39 @@ class SteamGifts:
             game_list = soup.find_all('div', {'class': 'giveaway__row-inner-wrap'})
 
             if not len(game_list):
-                log("⛔  Page is empty. Please, select another type.", "red")
-                sleep(10)
-                exit()
+                random_seconds = randint(900, 1400)
+                txt = f"We have run out of gifts to consider. Trying again in {random_seconds} seconds."
+                log(txt, "yellow")
+                sleep(random_seconds)
+                self.start()
+                continue
 
             for item in game_list:
-                if len(item.get('class', [])) == 2 and not self.pinned:
+                if len(item.get('lass', [])) == 2 and not self.pinned:
                     continue
 
                 if self.points == 0 or self.points < self.min_points:
-                    txt = f"🛋️  Sleeping to get 6 points. We have {self.points} points, but we need {self.min_points} to start."
+                    random_seconds = randint(900, 1400)
+                    txt = f"🛋️  Sleeping {random_seconds} seconds to get more points. We have {self.points} points, but we need {self.min_points} to start."
                     log(txt, "yellow")
-                    sleep(900)
+                    sleep(random_seconds)
                     self.start()
                     break
 
+                game_name = item.find('a', {'class': 'giveaway__heading__name'}).text
+                game_id = item.find('a', {'class': 'giveaway__heading__name'})['href'].split('/')[2]
                 game_cost = item.find_all('span', {'class': 'giveaway__heading__thin'})[-1]
-
                 if game_cost:
                     game_cost = game_cost.getText().replace('(', '').replace(')', '').replace('P', '')
                 else:
                     continue
+                times = item.select('div span[data-timestamp]')
+                game_remaining = times[0].text
+                game_created = times[1].text
+                game_entries = item.select('div.giveaway__links span')[0].text
 
-                game_name = item.find('a', {'class': 'giveaway__heading__name'}).text
+                txt = f"{game_name} {game_cost} - {game_entries} - Created {game_created} ago with {game_remaining} remaining."
+                log(txt, 'grey')
 
                 if self.points - int(game_cost) < 0:
                     txt = f"⛔ Not enough points to enter: {game_name}"
@@ -114,7 +124,6 @@ class SteamGifts:
                     continue
 
                 elif self.points - int(game_cost) >= 0:
-                    game_id = item.find('a', {'class': 'giveaway__heading__name'})['href'].split('/')[2]
                     res = self.entry_gift(game_id)
                     if res:
                         self.points -= int(game_cost)
