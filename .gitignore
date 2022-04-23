@@ -1,3 +1,5 @@
 env/
 *.ini
 __pycache__/
+.idea
+config
