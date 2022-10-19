@@ -101,6 +101,10 @@ def run():
     pinned_games = ask(type='confirm',
                        name='pinned',
                        message='Should bot enter pinned games?')['pinned']
+    
+    entered_giveaways = ask(type='confirm',
+                         name='list',
+                         message='Import game list from entered giveaways?')['list']
 
     gift_type = ask(type='list',
                  name='gift_type',
@@ -119,7 +123,7 @@ def run():
                      message='Enter minimum points to start working (bot will try to enter giveaways until minimum value is reached):',
                      validate=PointValidator)['min_points']
 
-    s = SG(cookie, gift_type, pinned_games, min_points)
+    s = SG(cookie, gift_type, pinned_games, entered_giveaways, min_points)
     s.start()
 
 
