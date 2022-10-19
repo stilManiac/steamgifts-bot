@@ -13,14 +13,14 @@ from bs4 import BeautifulSoup
 
 from cli import log
 
-
 class SteamGifts:
-    def __init__(self, cookie, gifts_type, pinned, min_points):
+    def __init__(self, cookie, gifts_type, pinned, entered_giveaways, min_points):
         self.cookie = {
             'PHPSESSID': cookie
         }
         self.gifts_type = gifts_type
         self.pinned = pinned
+        self.entered_giveaways = entered_giveaways
         self.min_points = int(min_points)
 
         self.base = "https://www.steamgifts.com"
@@ -70,19 +70,43 @@ class SteamGifts:
             sleep(10)
             exit()
 
-    def get_game_content(self, page=1):
+    def get_entered_giveaways_list(self, page=1):
         n = page
-        while True:
+        game_names = []
+        paginated_url = f"{self.base}/giveaways/entered/search?page={n}"
+        soup = self.get_soup_from_page(paginated_url)
+        last_div = str(soup.find_all('div', {'class': 'pagination'})[0].find_all('a')[-1])
+        last_page = int(last_div.split('=')[1].split('"')[1])
+        if self.entered_giveaways:
+           while n <= last_page:
+              txt = "⚙️  Retrieving games from %d page." % n
+              paginated_url = f"{self.base}/giveaways/entered/search?page={n}"
+              soup = self.get_soup_from_page(paginated_url)
+              game_list = soup.find_all('div', {'class': 'table__row-inner-wrap'})
+              if not len(game_list):
+                  log("⛔  Page is empty. Please, select another type.", "red")
+                  sleep(10)
+                  exit()
+
+              for item in game_list:
+                  game_name = item.find_all('a',{'class':'table__column__heading'})[0]['href'].split('/')[-1]
+                  game_names.append(game_name) 
+                  continue
+              n+=1
+        return set(game_names)
+
+    def get_game_content(self, page=1, game_names=None):
+        n = page
+        while n <= 3:
             txt = "⚙️  Retrieving games from %d page." % n
             log(txt, "magenta")
-
+            game_names = self.get_entered_giveaways_list(page)
+            game_str = ' '.join(game_names)
             filtered_url = self.filter_url[self.gifts_type] % n
             paginated_url = f"{self.base}/giveaways/{filtered_url}"
 
             soup = self.get_soup_from_page(paginated_url)
-
             game_list = soup.find_all('div', {'class': 'giveaway__row-inner-wrap'})
-
             if not len(game_list):
                 log("⛔  Page is empty. Please, select another type.", "red")
                 sleep(10)
@@ -107,6 +131,10 @@ class SteamGifts:
                     continue
 
                 game_name = item.find('a', {'class': 'giveaway__heading__name'}).text
+                game_name = game_name.replace(':','')
+                game_name_conv = game_name.lower().replace(' ', '-')
+                if game_name_conv not in game_names:
+                    continue
 
                 if self.points - int(game_cost) < 0:
                     txt = f"⛔ Not enough points to enter: {game_name}"
@@ -124,9 +152,9 @@ class SteamGifts:
 
             n = n+1
 
-
-        log("🛋️  List of games is ended. Waiting 2 mins to update...", "yellow")
-        sleep(120)
+        t_secs = 3600
+        log(f"🛋️  List of games is ended. Waiting {t_secs/60}  mins to update...", "yellow")
+        sleep(t_secs)
         self.start()
 
     def entry_gift(self, game_id):
