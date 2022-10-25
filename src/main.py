@@ -69,14 +69,17 @@ class SteamGifts:
             log("⛔  Cookie is not valid.", "red")
             sleep(10)
             exit()
-
-    def get_entered_giveaways_list(self, page=1):
+    
+    def get_entered_giveaways_list(self, page=1, last_page=20):
         n = page
         game_names = []
         paginated_url = f"{self.base}/giveaways/entered/search?page={n}"
         soup = self.get_soup_from_page(paginated_url)
         last_div = str(soup.find_all('div', {'class': 'pagination'})[0].find_all('a')[-1])
-        last_page = int(last_div.split('=')[1].split('"')[1])
+
+        if not last_page:
+            last_page = int(last_div.split('=')[1].split('"')[1])
+
         if self.entered_giveaways:
            while n <= last_page:
               txt = "⚙️  Retrieving games from %d page." % n
