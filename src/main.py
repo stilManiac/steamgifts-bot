@@ -140,11 +140,9 @@ class SteamGifts:
                     game_cost = game_cost.getText().replace('(', '').replace(')', '').replace('P', '')
                 else:
                     continue
-
-                game_name = item.find('a', {'class': 'giveaway__heading__name'}).text
-                game_name = game_name.replace(':','')
-                game_name_conv = game_name.lower().replace(' ', '-')
-                if game_name_conv not in game_names:
+                
+                game_name = item.find('a')['href'].split('/')[-1]
+                if game_name not in game_names:
                     continue
 
                 if self.points - int(game_cost) < 0:
