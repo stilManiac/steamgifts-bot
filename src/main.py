@@ -71,7 +71,7 @@ class SteamGifts:
             sleep(10)
             exit()
     
-    def get_entered_giveaways_list(self, page=1, last_page=20):
+    def get_entered_giveaways(self, page=1, last_page=20):
         n = page
         game_names = []
         paginated_url = f"{self.base}/giveaways/entered/search?page={n}"
@@ -182,6 +182,6 @@ class SteamGifts:
             log(txt, "blue")
 
         if self.past_games is None:
-            self.get_entered_giveaways_list()
+            self.get_entered_giveaways()
 
         self.get_game_content(self.past_games)
