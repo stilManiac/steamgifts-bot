@@ -181,4 +181,7 @@ class SteamGifts:
             txt = "🤖 Hoho! I am back! You have %d points. Lets hack." % self.points
             log(txt, "blue")
 
-        self.get_game_content()
+        if self.past_games is None:
+            self.get_entered_giveaways_list()
+
+        self.get_game_content(self.past_games)
