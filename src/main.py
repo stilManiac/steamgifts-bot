@@ -83,10 +83,13 @@ class SteamGifts:
 
         if self.entered_giveaways:
            while n <= last_page:
-              txt = "⚙️  Retrieving games from %d page." % n
+
+              txt = "⚙️  Retrieving past giveaways from page %d." % n
+              log(txt, 'magenta')
               paginated_url = f"{self.base}/giveaways/entered/search?page={n}"
               soup = self.get_soup_from_page(paginated_url)
               game_list = soup.find_all('div', {'class': 'table__row-inner-wrap'})
+
               if not len(game_list):
                   log("⛔  Page is empty. Please, select another type.", "red")
                   sleep(10)
