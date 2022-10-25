@@ -25,6 +25,7 @@ class SteamGifts:
 
         self.base = "https://www.steamgifts.com"
         self.session = requests.Session()
+        self.past_games = None 
 
         self.filter_url = {
             'All': "search?page=%d",
@@ -96,20 +97,24 @@ class SteamGifts:
                   game_names.append(game_name) 
                   continue
               n+=1
-        return set(game_names)
+              
+        self.past_games = set(game_names) 
 
-    def get_game_content(self, page=1, game_names=None):
+        return self.past_games
+
+    def get_game_content(self, game_names, page=1):
         n = page
+        game_str = ' '.join(game_names)
+        txt = "⚙️  Retrieving games from %d page." % n
+        log(txt, "magenta")
         while n <= 3:
-            txt = "⚙️  Retrieving games from %d page." % n
-            log(txt, "magenta")
-            game_names = self.get_entered_giveaways_list(page)
-            game_str = ' '.join(game_names)
+
             filtered_url = self.filter_url[self.gifts_type] % n
             paginated_url = f"{self.base}/giveaways/{filtered_url}"
 
             soup = self.get_soup_from_page(paginated_url)
             game_list = soup.find_all('div', {'class': 'giveaway__row-inner-wrap'})
+
             if not len(game_list):
                 log("⛔  Page is empty. Please, select another type.", "red")
                 sleep(10)
