@@ -108,10 +108,11 @@ class SteamGifts:
     def get_game_content(self, game_names, page=1):
         n = page
         game_str = ' '.join(game_names)
-        txt = "⚙️  Retrieving games from %d page." % n
-        log(txt, "magenta")
+
         while n <= 3:
 
+            txt = "⚙️  Retrieving games from %d page." % n
+            log(txt, "magenta")
             filtered_url = self.filter_url[self.gifts_type] % n
             paginated_url = f"{self.base}/giveaways/{filtered_url}"
 
@@ -159,7 +160,7 @@ class SteamGifts:
                         log(txt, "green")
                         sleep(randint(3, 7))
 
-            n = n+1
+            n+=1
 
         t_secs = 3600
         log(f"🛋️  List of games is ended. Waiting {t_secs/60}  mins to update...", "yellow")
